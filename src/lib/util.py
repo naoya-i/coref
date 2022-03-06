@@ -14,13 +14,10 @@ import tensorflow as tf
 import pyhocon
 
 from . import independent
-from . import overlap
 
 def get_model(config):
     if config['model_type'] == 'independent':
         return independent.CorefModel(config)
-    elif config['model_type'] == 'overlap':
-        return overlap.CorefModel(config)
     else:
         raise NotImplementedError('Undefined model type')
 
