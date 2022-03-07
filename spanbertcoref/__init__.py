@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import sys
 import json
@@ -8,17 +5,39 @@ import argparse
 import os
 
 import tensorflow as tf
-from lib import util
-from lib.bert import tokenization
+from .lib import util
+from .lib.bert import tokenization
 from tqdm import tqdm
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-def main(args):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-g', '--genre', default="nw",
+        help="Genre of input document.")
+    parser.add_argument(
+        '-m', '--model', default="spanbert_base", choices="bert_base spanbert_base bert_large spanbert_large".split(),
+        help="Model type.")
+    parser.add_argument(
+        '-o', '--output',
+        help="Output path.")
+    parser.add_argument(
+        'inputs', nargs="+",
+        help="Input document(s).")
+
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+
     config = util.initialize_from_env(args.model)
-    tok = get_tokenizer(args.model)
+    maybe_download(config, args.model)
+    tok = get_tokenizer(config, args.model)
     model = util.get_model(config)
 
     with tf.Session() as session:
@@ -55,8 +74,17 @@ def maybe_file_handle(f):
     return open(f) if f is not None else sys.stdout
 
 
-def get_tokenizer(model_name):
-    return tokenization.FullTokenizer(vocab_file=os.path.join("model", model_name, "vocab.txt"), do_lower_case=False)
+def maybe_download(config, model_name):
+    if os.path.exists(os.path.join(config["model_root"], model_name, "vocab.txt")):
+        return
+
+    logging.info("Downloading and extracting model...")
+    os.system(f"wget -P {config['model_root']} http://nlp.cs.washington.edu/pair2vec/{config['model_type']}.tar.gz")
+    os.system(f"tar xvzf {config['model_root']}/{config['model_type']}.tar.gz -C {config['model_root']}")
+
+
+def get_tokenizer(config, model_name):
+    return tokenization.FullTokenizer(vocab_file=os.path.join(config["model_root"], model_name, "vocab.txt"), do_lower_case=False)
 
 
 def parse_text(args, config, tokenizer, lines):
@@ -102,7 +130,7 @@ def parse_text(args, config, tokenizer, lines):
 
 def get_clusters(lines, output):
     def _extract_cluster(cluster):
-        for m1, m2 in cluster:
+        for m1, m2 in sorted(cluster, key=lambda x: x[0]):
             (m1s, m1i, _), (m2s, _, m2j) = output["char_map"][m1], output["char_map"][m2]
 
             if m1s == m2s:
@@ -125,35 +153,11 @@ def markup(lines, clusters):
         for m in mentions:
             all_tags.append((i, m))
 
-    for c, ((m1s, m1i), (m2s, m2j), _) in sorted(all_tags, key=lambda x: x[1][1])[::-1]:
-        twin_before[m1s][m1i] += f"<ent_{c}>"
-        twin_after[m2s][m2j] = f"</ent_{c}>" + twin_after[m2s][m2j]
+    for c, ((m1s, m1i), (m2s, m2j), _) in sorted(all_tags, key=lambda x: len(x[1][2])):
+        twin_before[m1s][m1i] = f"<ent_{c}>" + twin_before[m1s][m1i]
+        twin_after[m2s][m2j] += f"</ent_{c}>"
 
     return ["".join([sb+s+sa
                      for s, sb, sa in zip(sent, sent_twin_bf, sent_twin_af)])
             for sent, sent_twin_bf, sent_twin_af in zip(lines, twin_before, twin_after)]
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-g', '--genre', default="nw",
-        help="Genre of input document.")
-    parser.add_argument(
-        '-m', '--model', default="spanbert_base", choices="bert_base spanbert_base bert_large spanbert_large".split(),
-        help="Model type.")
-    parser.add_argument(
-        '-o', '--output',
-        help="Output path.")
-    parser.add_argument(
-        'inputs', nargs="+",
-        help="Input document(s).")
-    
-    args = parser.parse_args()
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-
-    main(args)
