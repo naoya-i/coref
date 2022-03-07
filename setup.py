@@ -25,6 +25,7 @@ setup(
     url="https://github.com/naoya-i/spanbertcoref",
     entry_points={'console_scripts': ['spanbertcoref=spanbertcoref:main']},
     packages=find_packages("spanbertcoref"),
+    package_dir={"": "spanbertcoref"},
     install_requires=open("requirements.txt").read().splitlines(),
     include_package_data=True,
     cmdclass={'install': PostProcessing},
