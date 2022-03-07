@@ -1,0 +1,8 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "tqdm",
+    "pyhocon",
+    "tensorflow-gpu==1.14.0",
+]
+build-backend = "setuptools.build_meta"

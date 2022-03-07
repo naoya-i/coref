@@ -1,1 +1,1 @@
-include lib/coref_kernels.so
+include src/coref_kernels.cc

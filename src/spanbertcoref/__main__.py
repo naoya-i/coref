@@ -36,7 +36,6 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S')
 
     config = util.initialize_from_env(args.model)
-    maybe_download(config, args.model)
     tok = get_tokenizer(config, args.model)
     model = util.get_model(config)
 
@@ -72,15 +71,6 @@ def main():
 
 def maybe_file_handle(f):
     return open(f) if f is not None else sys.stdout
-
-
-def maybe_download(config, model_name):
-    if os.path.exists(os.path.join(config["model_root"], model_name, "vocab.txt")):
-        return
-
-    logging.info("Downloading and extracting model...")
-    os.system(f"wget -P {config['model_root']} http://nlp.cs.washington.edu/pair2vec/{config['model_type']}.tar.gz")
-    os.system(f"tar xvzf {config['model_root']}/{config['model_type']}.tar.gz -C {config['model_root']}")
 
 
 def get_tokenizer(config, model_name):
@@ -161,3 +151,6 @@ def markup(lines, clusters):
                      for s, sb, sa in zip(sent, sent_twin_bf, sent_twin_af)])
             for sent, sent_twin_bf, sent_twin_af in zip(lines, twin_before, twin_after)]
 
+
+if __name__ == "__main__":
+    main()
