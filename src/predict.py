@@ -112,8 +112,8 @@ def get_clusters(lines, output):
 
             yield (m1s, m1i), (m2s, m2j), mtext
 
-    return [list(_extract_cluster(c))
-            for c in output['predicted_clusters']]
+    return {i: list(_extract_cluster(c))
+            for i, c in enumerate(output['predicted_clusters'])}
 
 
 def markup(lines, clusters):
@@ -121,7 +121,7 @@ def markup(lines, clusters):
     twin_after = [[""]*len(sent) for sent in lines]
     all_tags = list()
 
-    for i, mentions in enumerate(clusters):
+    for i, mentions in clusters.items():
         for m in mentions:
             all_tags.append((i, m))
 
