@@ -26,6 +26,7 @@ setup(
     entry_points={'console_scripts': ['spanbertcoref=spanbertcoref:main']},
     packages=find_packages("spanbertcoref"),
     package_dir={"": "spanbertcoref"},
+    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     install_requires=open("requirements.txt").read().splitlines(),
     include_package_data=True,
     cmdclass={'install': PostProcessing},
