@@ -13,6 +13,9 @@ import numpy as np
 import tensorflow as tf
 import pyhocon
 
+import logging
+logger = logging.getLogger(__name__)
+
 from . import independent
 
 def get_model(config):
@@ -25,7 +28,7 @@ def initialize_from_env(name, eval_test=False):
   if "GPU" in os.environ:
     set_gpus(int(os.environ["GPU"]))
 
-  print("Running experiment: {}".format(name))
+  logger.info("Running experiment: {}".format(name))
 
   if eval_test:
     config = pyhocon.ConfigFactory.parse_file("test.experiments.conf")[name]
@@ -33,7 +36,7 @@ def initialize_from_env(name, eval_test=False):
     config = pyhocon.ConfigFactory.parse_file("experiments.conf")[name]
   config["log_dir"] = mkdirs(os.path.join(config["model_root"], name))
 
-  print(pyhocon.HOCONConverter.convert(config, "hocon"))
+  logger.info(pyhocon.HOCONConverter.convert(config, "hocon"))
   return config
 
 def copy_checkpoint(source, target):
@@ -49,7 +52,7 @@ def flatten(l):
 def set_gpus(*gpus):
   # pass
   os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(g) for g in gpus)
-  print("Setting CUDA_VISIBLE_DEVICES to: {}".format(os.environ["CUDA_VISIBLE_DEVICES"]))
+  logger.info("Setting CUDA_VISIBLE_DEVICES to: {}".format(os.environ["CUDA_VISIBLE_DEVICES"]))
 
 def mkdirs(path):
   try:
@@ -197,7 +200,7 @@ class EmbeddingDictionary(object):
     return self._size
 
   def load_embedding_dict(self, path):
-    print("Loading word embeddings from {}...".format(path))
+    logger.info("Loading word embeddings from {}...".format(path))
     default_embedding = np.zeros(self.size)
     embedding_dict = collections.defaultdict(lambda:default_embedding)
     if len(path) > 0:
@@ -211,7 +214,7 @@ class EmbeddingDictionary(object):
           embedding_dict[word] = embedding
       if vocab_size is not None:
         assert vocab_size == len(embedding_dict)
-      print("Done loading word embeddings.")
+      logger.info("Done loading word embeddings.")
     return embedding_dict
 
   def __getitem__(self, key):
