@@ -40,8 +40,13 @@ def main(args):
                 example["top_spans"] = list(zip((int(i) for i in top_span_starts), (int(i) for i in top_span_ends)))
                 example['head_scores'] = []
 
-                out = parse_output(lines, example)
-                out["input_filename"] = input_filename
+                clusters = get_clusters(lines, example)
+
+                out = {
+                    "input_filename": input_filename,
+                    "clusters": clusters,
+                    "annotated_text": markup(lines, clusters),
+                }
 
                 print(json.dumps(out), file=output_file)
 
@@ -95,29 +100,38 @@ def parse_text(args, config, tokenizer, lines):
     }
 
 
-def parse_output(lines, output):
-    clusters = list()
-
-    for cluster in output['predicted_clusters']:
-        mapped = []
-
-        for mention in cluster:
-            (m1s, m1i, m1j), (m2s, m2i, m2j) = output["char_map"][mention[0]], output["char_map"][mention[1]]
+def get_clusters(lines, output):
+    def _extract_cluster(cluster):
+        for m1, m2 in cluster:
+            (m1s, m1i, _), (m2s, _, m2j) = output["char_map"][m1], output["char_map"][m2]
 
             if m1s == m2s:
-                mtext = lines[m1s][m1i:m2j+1]
+                mtext = lines[m1s][m1i:m2j+1]  # within-segment start/end.
             else:
                 mtext = lines[m1s][m1i:] + lines[m2s][:m2j+1]
 
-            mapped.append((
-                (m1s, m1i), (m2s, m2j), mtext
-            ))
-        
-        clusters.append(mapped)
+            yield (m1s, m1i), (m2s, m2j), mtext
 
-    return {
-        "clusters": clusters,
-    }
+    return [list(_extract_cluster(c))
+            for c in output['predicted_clusters']]
+
+
+def markup(lines, clusters):
+    twin_before = [[""]*len(sent) for sent in lines]
+    twin_after = [[""]*len(sent) for sent in lines]
+    all_tags = list()
+
+    for i, mentions in enumerate(clusters):
+        for m in mentions:
+            all_tags.append((i, m))
+
+    for c, ((m1s, m1i), (m2s, m2j), _) in sorted(all_tags, key=lambda x: x[1][1])[::-1]:
+        twin_before[m1s][m1i] += f"<ent_{c}>"
+        twin_after[m2s][m2j] = f"</ent_{c}>" + twin_after[m2s][m2j]
+
+    return ["".join([sb+s+sa
+                     for s, sb, sa in zip(sent, sent_twin_bf, sent_twin_af)])
+            for sent, sent_twin_bf, sent_twin_af in zip(lines, twin_before, twin_after)]
 
 
 if __name__ == "__main__":
