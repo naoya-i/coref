@@ -1,1 +1,2 @@
 include src/spanbertcoref/lib/coref_kernels.cc
+include src/spanbertcoref/template.conf
