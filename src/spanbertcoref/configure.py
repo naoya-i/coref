@@ -15,7 +15,7 @@ def compile_kernel():
     cc_file = RESOURCE_ROOT / "lib" / "coref_kernels.cc"
     so_file = RESOURCE_ROOT / "lib" / "coref_kernels.so"
 
-    os.system(f"g++ -std=c++11 -shared {cc_file} -o {so_file} -fPIC {tf_extra_flags} -O2 -D_GLIBCXX_USE_CXX11_ABI=1")
+    os.system(f"g++ -std=c++11 -shared {cc_file} -o {so_file} -fPIC {tf_extra_flags} -O2")
 
 
 def maybe_copy_conf():
