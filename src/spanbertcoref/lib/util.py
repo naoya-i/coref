@@ -30,12 +30,12 @@ def initialize_from_env(model_name):
   if "GPU" in os.environ:
     set_gpus(int(os.environ["GPU"]))
 
-  logger.info("Running experiment: {}".format(model_name))
+  logger.debug("Running experiment: {}".format(model_name))
 
   config = pyhocon.ConfigFactory.parse_file(os.path.expanduser("~/.spanbertcoref.conf"))[model_name]
   config["log_dir"] = mkdirs(os.path.join(config["model_root"], model_name))
 
-  logger.info(pyhocon.HOCONConverter.convert(config, "hocon"))
+  logger.debug(pyhocon.HOCONConverter.convert(config, "hocon"))
   return config
 
 def copy_checkpoint(source, target):
@@ -51,7 +51,7 @@ def flatten(l):
 def set_gpus(*gpus):
   # pass
   os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(g) for g in gpus)
-  logger.info("Setting CUDA_VISIBLE_DEVICES to: {}".format(os.environ["CUDA_VISIBLE_DEVICES"]))
+  logger.debug("Setting CUDA_VISIBLE_DEVICES to: {}".format(os.environ["CUDA_VISIBLE_DEVICES"]))
 
 def mkdirs(path):
   try:
@@ -199,7 +199,7 @@ class EmbeddingDictionary(object):
     return self._size
 
   def load_embedding_dict(self, path):
-    logger.info("Loading word embeddings from {}...".format(path))
+    logger.debug("Loading word embeddings from {}...".format(path))
     default_embedding = np.zeros(self.size)
     embedding_dict = collections.defaultdict(lambda:default_embedding)
     if len(path) > 0:
@@ -213,7 +213,7 @@ class EmbeddingDictionary(object):
           embedding_dict[word] = embedding
       if vocab_size is not None:
         assert vocab_size == len(embedding_dict)
-      logger.info("Done loading word embeddings.")
+      logger.debug("Done loading word embeddings.")
     return embedding_dict
 
   def __getitem__(self, key):

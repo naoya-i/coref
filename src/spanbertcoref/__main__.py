@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        '-v', '--verbose', action="store_true",
+        help="Debug mode.")
+    parser.add_argument(
         '-g', '--genre', default="nw",
         help="Genre of input document.")
     parser.add_argument(
@@ -33,7 +36,7 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.INFO if not args.verbose else logging.DEBUG,
         format='%(asctime)s %(levelname)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
