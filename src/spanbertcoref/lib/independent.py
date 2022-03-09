@@ -54,6 +54,9 @@ class CorefModel(object):
 
     self.predictions, self.loss = self.get_predictions_and_loss(*self.input_tensors)
     # bert stuff
+    tvars = tf.trainable_variables()
+    for var in tvars:
+      logger.debug("  name = %s, shape = %s" % (var.name, var.shape))
     # If you're using TF weights only, tf_checkpoint and init_checkpoint can be the same
     # Get the assignment map from the tensorflow checkpoint. Depending on the extension, use TF/Pytorch to load weights.
     assignment_map, initialized_variable_names = modeling.get_assignment_map_from_checkpoint(tvars, config['tf_checkpoint'])
