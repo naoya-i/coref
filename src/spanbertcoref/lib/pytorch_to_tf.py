@@ -1,7 +1,10 @@
 import numpy as np
 import torch
 import sys
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.framework import ops
 

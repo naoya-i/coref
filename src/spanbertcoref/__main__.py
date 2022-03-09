@@ -4,7 +4,9 @@ import json
 import argparse
 import os
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from .lib import util
 from .lib.bert import tokenization
 from tqdm import tqdm

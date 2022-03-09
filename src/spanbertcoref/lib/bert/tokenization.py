@@ -22,7 +22,9 @@ import collections
 import re
 import unicodedata
 import six
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 
 def validate_case_matches_checkpoint(do_lower_case, init_checkpoint):

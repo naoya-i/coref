@@ -8,7 +8,8 @@ import math
 import json
 import threading
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 import logging
 logger = logging.getLogger(__name__)
@@ -54,6 +55,9 @@ class CorefModel(object):
     self.predictions, self.loss = self.get_predictions_and_loss(*self.input_tensors)
     # bert stuff
     tvars = tf.trainable_variables()
+    for var in tvars:
+      logger.info("  name = %s, shape = %s" % (var.name, var.shape))
+
     # If you're using TF weights only, tf_checkpoint and init_checkpoint can be the same
     # Get the assignment map from the tensorflow checkpoint. Depending on the extension, use TF/Pytorch to load weights.
     assignment_map, initialized_variable_names = modeling.get_assignment_map_from_checkpoint(tvars, config['tf_checkpoint'])
@@ -231,7 +235,7 @@ class CorefModel(object):
     fast_antecedent_scores += self.get_fast_antecedent_scores(top_span_emb) # [k, k]
     if self.config['use_prior']:
       antecedent_distance_buckets = self.bucket_distance(antecedent_offsets) # [k, c]
-      distance_scores = util.projection(tf.nn.dropout(tf.get_variable("antecedent_distance_emb", [10, self.config["feature_size"]], initializer=tf.truncated_normal_initializer(stddev=0.02)), self.dropout), 1, initializer=tf.truncated_normal_initializer(stddev=0.02)) #[10, 1]
+      distance_scores = util.projection(tf.nn.dropout(tf.get_variable("antecedent_distance_emb", [10, self.config["feature_size"]], initializer=tf.truncated_normal_initializer(stddev=0.02)), rate=1-self.dropout), 1, initializer=tf.truncated_normal_initializer(stddev=0.02)) #[10, 1]
       antecedent_distance_scores = tf.gather(tf.squeeze(distance_scores, 1), antecedent_distance_buckets) # [k, c]
       fast_antecedent_scores += antecedent_distance_scores
 
@@ -356,7 +360,7 @@ class CorefModel(object):
     if self.config["use_features"]:
       span_width_index = span_width - 1 # [k]
       span_width_emb = tf.gather(tf.get_variable("span_width_embeddings", [self.config["max_span_width"], self.config["feature_size"]], initializer=tf.truncated_normal_initializer(stddev=0.02)), span_width_index) # [k, emb]
-      span_width_emb = tf.nn.dropout(span_width_emb, self.dropout)
+      span_width_emb = tf.nn.dropout(span_width_emb, rate=1-self.dropout)
       span_emb_list.append(span_width_emb)
 
     if self.config["model_heads"]:
@@ -443,7 +447,7 @@ class CorefModel(object):
       feature_emb_list.append(segment_distance_emb)
 
     feature_emb = tf.concat(feature_emb_list, 2) # [k, c, emb]
-    feature_emb = tf.nn.dropout(feature_emb, self.dropout) # [k, c, emb]
+    feature_emb = tf.nn.dropout(feature_emb, rate=1-self.dropout) # [k, c, emb]
 
     target_emb = tf.expand_dims(top_span_emb, 1) # [k, 1, emb]
     similarity_emb = top_antecedent_emb * target_emb # [k, c, emb]
@@ -458,8 +462,8 @@ class CorefModel(object):
 
   def get_fast_antecedent_scores(self, top_span_emb):
     with tf.variable_scope("src_projection"):
-      source_top_span_emb = tf.nn.dropout(util.projection(top_span_emb, util.shape(top_span_emb, -1)), self.dropout) # [k, emb]
-    target_top_span_emb = tf.nn.dropout(top_span_emb, self.dropout) # [k, emb]
+      source_top_span_emb = tf.nn.dropout(util.projection(top_span_emb, util.shape(top_span_emb, -1)), rate=1-self.dropout) # [k, emb]
+    target_top_span_emb = tf.nn.dropout(top_span_emb, rate=1-self.dropout) # [k, emb]
     return tf.matmul(source_top_span_emb, target_top_span_emb, transpose_b=True) # [k, k]
 
   def flatten_emb_by_sentence(self, emb, text_len_mask):

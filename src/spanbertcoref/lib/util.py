@@ -10,7 +10,9 @@ import shutil
 import sys
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import pyhocon
 
 import logging
@@ -80,7 +82,7 @@ def highway(inputs, num_layers, dropout):
       f = tf.sigmoid(f)
       j = tf.nn.relu(j)
       if dropout is not None:
-        j = tf.nn.dropout(j, dropout)
+        j = tf.nn.dropout(j, rate=1-dropout)
       inputs = f * j + (1 - f) * inputs
   return inputs
 
@@ -105,7 +107,7 @@ def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout, output_we
     current_outputs = tf.nn.relu(tf.nn.xw_plus_b(current_inputs, hidden_weights, hidden_bias))
 
     if dropout is not None:
-      current_outputs = tf.nn.dropout(current_outputs, dropout)
+      current_outputs = tf.nn.dropout(current_outputs, rate=1-dropout)
     current_inputs = current_outputs
 
   output_weights = tf.get_variable("output_weights", [shape(current_inputs, 1), output_size], initializer=output_weights_initializer)
@@ -227,19 +229,19 @@ class EmbeddingDictionary(object):
     else:
       return v
 
-class CustomLSTMCell(tf.contrib.rnn.RNNCell):
+class CustomLSTMCell(tf.nn.rnn_cell.RNNCell):
   def __init__(self, num_units, batch_size, dropout):
     self._num_units = num_units
     self._dropout = dropout
-    self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size]), dropout)
+    self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size]), rate=1-dropout)
     self._initializer = self._block_orthonormal_initializer([self.output_size] * 3)
     initial_cell_state = tf.get_variable("lstm_initial_cell_state", [1, self.output_size])
     initial_hidden_state = tf.get_variable("lstm_initial_hidden_state", [1, self.output_size])
-    self._initial_state = tf.contrib.rnn.LSTMStateTuple(initial_cell_state, initial_hidden_state)
+    self._initial_state = tf.nn.rnn_cell.LSTMStateTuple(initial_cell_state, initial_hidden_state)
 
   @property
   def state_size(self):
-    return tf.contrib.rnn.LSTMStateTuple(self.output_size, self.output_size)
+    return tf.nn.rnn_cell.LSTMStateTuple(self.output_size, self.output_size)
 
   @property
   def output_size(self):
@@ -259,7 +261,7 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
       i = tf.sigmoid(i)
       new_c = (1 - i) * c  + i * tf.tanh(j)
       new_h = tf.tanh(new_c) * tf.sigmoid(o)
-      new_state = tf.contrib.rnn.LSTMStateTuple(new_c, new_h)
+      new_state = tf.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
       return new_h, new_state
 
   def _orthonormal_initializer(self, scale=1.0):
