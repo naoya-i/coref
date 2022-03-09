@@ -1,103 +1,89 @@
-# BERT and SpanBERT for Coreference Resolution
-This repository contains code and models for the paper, [BERT for Coreference Resolution: Baselines and Analysis](https://arxiv.org/abs/1908.09091). Additionally, we also include the coreference resolution model from the paper [SpanBERT: Improving Pre-training by Representing and Predicting Spans](https://arxiv.org/abs/1907.10529), which is the current state of the art on OntoNotes (79.6 F1). Please refer to the [SpanBERT repository](https://github.com/facebookresearch/SpanBERT) for other tasks.
+# spanbert-coref
 
-The model architecture itself is an extension of the [e2e-coref](https://github.com/kentonl/e2e-coref) model.
+***Work in progress***
+
+Coreference resolution system powered by BERT/SpanBERT. This is a thin wrapper for https://github.com/mandarjoshi90/coref.
+
 
 ## Setup
-* Install python3 requirements: `pip install -r requirements.txt`
-* `export data_dir=</path/to/data_dir>`
-* `./setup_all.sh`: This builds the custom kernels
 
-## Pretrained Coreference Models
-Please download following files to use the *pretrained coreference models* on your data. If you want to train your own coreference model, you can skip this step.
-
-| Model          | `<model_name>` for download | F1 (%) |
-| -------------- | --------------------------- |:------:|
-| BERT-base      | bert_base                   | 73.9   |
-| SpanBERT-base  | spanbert_base               | 77.7   |
-| BERT-large     | bert_large                  | 76.9   |
-| SpanBERT-large | spanbert_large              | 79.6   |
-
-`./download_pretrained.sh <model_name>` (e.g,: bert_base, bert_large, spanbert_base, spanbert_large; assumes that `$data_dir` is set) This downloads BERT/SpanBERT models finetuned on OntoNotes. The original/non-finetuned version of SpanBERT weights is available in this [repository](https://github.com/facebookresearch/SpanBERT). You can use these models with `evaluate.py` and `predict.py` (the section on Batched Prediction Instructions)
+1. Create and activate a dedicated virtual environment
 
 
-## Training / Finetuning Instructions
-* Finetuning a BERT/SpanBERT *large* model on OntoNotes requires access to a 32GB GPU. You might be able to train the large model with a smaller `max_seq_length`, `max_training_sentences`, `ffnn_size`, and `model_heads = false` on a 16GB machine; this will almost certainly result in relatively poorer performance as measured on OntoNotes.
-* Running/testing a large pretrained model is still possible on a 16GB GPU. You should be able to finetune the base models on smaller GPUs.
+2. Install the software
 
-### Setup for training
-This assumes access to OntoNotes 5.0.
-`./setup_training.sh <ontonotes/path/ontonotes-release-5.0> $data_dir`. This preprocesses the OntoNotes corpus, and downloads the original (not finetuned on OntoNotes) BERT models which will be finetuned using `train.py`. 
-
-* Experiment configurations are found in `experiments.conf`. Choose an experiment that you would like to run, e.g. `bert_base`
-* Note that configs without the prefix `train_` load checkpoints already tuned on OntoNotes.
-* Training: `GPU=0 python train.py <experiment>`
-* Results are stored in the `log_root` directory (see `experiments.conf`) and can be viewed via TensorBoard.
-* Evaluation: `GPU=0 python evaluate.py <experiment>`. This currently evaluates on the dev set.
-
-
-## Batched Prediction Instructions
-
-* Create a file where each line similar to `cased_config_vocab/trial.jsonlines` (make sure to strip the newlines so each line is well-formed json):
-```
-{
-  "clusters": [], # leave this blank
-  "doc_key": "nw", # key closest to your domain. "nw" is newswire. See the OntoNotes documentation.
-  "sentences": [["[CLS]", "subword1", "##subword1", ".", "[SEP]"]], # list of BERT tokenized segments. Each segment should be less than the max_segment_len in your config
-  "speakers": [["[SPL]", "-", "-", "-", "[SPL]"]], # speaker information for each subword in sentences
-  "sentence_map": [0, 0, 0, 0, 0], # flat list where each element is the sentence index of the subwords
-  "subtoken_map": [0, 0, 0, 1, 1]  # flat list containing original word index for each subword. [CLS]  and the first word share the same index
-}
-```
-  * `clusters` should be left empty and is only used for evaluation purposes.
-  * `doc_key` indicates the genre, which can be one of the following: `"bc", "bn", "mz", "nw", "pt", "tc", "wb"`
-  * `speakers` indicates the speaker of each word. These can be all empty strings if there is only one known speaker.
-* Run `GPU=0 python predict.py <experiment> <input_file> <output_file>`, which outputs the input jsonlines with an additional key `predicted_clusters`.
-
-## Notes
-* The current config runs the Independent model.
-* When running on test, change the `eval_path` and `conll_eval_path` from dev to test.
-* The `model_dir` inside the `log_root` contains `stdout.log`. Check the `max_f1` after 57000 steps. For example
-``
-2019-06-12 12:43:11,926 - INFO - __main__ - [57000] evaL_f1=0.7694, max_f1=0.7697
-``
-* You can also load pytorch based model files (ending in `.pt`) which share BERT's architecture. See `pytorch_to_tf.py` for details.
-
-### Important Config Keys
-* `log_root`: This is where all models and logs are stored. Check this before running anything.
-* `bert_learning_rate`: The learning rate for the BERT parameters. Typically, `1e-5` and `2e-5` work well.
-* `task_learning_rate`: The learning rate for the other parameters. Typically, LRs between `0.0001` to `0.0003` work well.
-* `init_checkpoint`: The checkpoint file from which BERT parameters are initialized. Both TF and Pytorch checkpoints work as long as they use the same BERT architecture. Use `*ckpt` files for TF and `*pt` for Pytorch.
-* `max_segment_len`: The maximum size of the BERT context window. Larger segments work better for SpanBERT while BERT suffers a sharp drop at 512.
-
-### Slurm
-If you have access to a slurm GPU cluster, you could use the following for set of commands for training.
-* `python tune.py  --generate_configs --data_dir <coref_data_dir>`: This generates multiple configs for tuning (BERT and task) learning rates, embedding models, and `max_segment_len`. This modifies `experiments.conf`. Use `--trial` to print to stdout instead. If you need to generate this from scratch, refer to `basic.conf`.
-* `grep "\{best\}" experiments.conf | cut -d = -f 1 > torun.txt`: This creates a list of configs that can be used by the script to launch jobs. You can use a regexp to restrict the list of configs. For example, `grep "\{best\}" experiments.conf | grep "sl512*" | cut -d = -f 1 > torun.txt` will select configs with `max_segment_len = 512`.
-* `python tune.py --data_dir <coref_data_dir> --run_jobs`: This launches jobs from torun.txt on the slurm cluster.
-
-### Miscellaneous
-* If you like using Colab, check out Jonathan K. Kummerfeld's [notebook](https://colab.research.google.com/drive/1SlERO9Uc9541qv6yH26LJz5IM9j7YVra#scrollTo=H0xPknceFORt).
-* Some `g++` versions may not play nicely with this repo. If you get this:
-`tensorflow.python.framework.errors_impl.NotFoundError: ./coref_kernels.so: undefined symbol: _ZN10tensorflow12OpDefBuilder4AttrESs`, try removing the flag `-D_GLIBCXX_USE_CXX11_ABI=0` from `setup_all.sh`. Thanks to Naman Jain for the [solution](https://github.com/mandarjoshi90/coref/issues/29).
-
-## Citations
-If you use the pretrained *BERT*-based coreference model (or this implementation), please cite the paper, [BERT for Coreference Resolution: Baselines and Analysis](https://arxiv.org/abs/1908.09091).
-```
-@inproceedings{joshi2019coref,
-    title={{BERT} for Coreference Resolution: Baselines and Analysis},
-    author={Mandar Joshi and Omer Levy and Daniel S. Weld and Luke Zettlemoyer},
-    year={2019},
-    booktitle={Empirical Methods in Natural Language Processing (EMNLP)}
-}
+```console
+foo@bar:~$ pip install git+https://github.com/naoya-i/spanbert-coref
 ```
 
-Additionally, if you use the pretrained *SpanBERT* coreference model, please cite the paper, [SpanBERT: Improving Pre-training by Representing and Predicting Spans](https://arxiv.org/abs/1907.10529).
+3. Run setup
+
+```console
+foo@bar:~$ python -m spanbertcoref.configure
 ```
-@article{joshi2019spanbert,
-    title={{SpanBERT}: Improving Pre-training by Representing and Predicting Spans},
-    author={Mandar Joshi and Danqi Chen and Yinhan Liu and Daniel S. Weld and Luke Zettlemoyer and Omer Levy},
-    year={2019},
-    journal={arXiv preprint arXiv:1907.10529}
-}
+
+This will compile a tensorflow kernel and copy a basic configuration file to your home directory (`~/.spanbertcoref.conf`).
+
+(**Optional**) To specify where to download pretrained models, modify `model_root` in the conf file.
+By default it is `${HOME}/.spanbertcoref/model/`.
+
+
+4. Download pretrained models
+
+```console
+foo@bar:~$ python -m spanbertcoref.download spanbert_large
 ```
+
+Your choice is: `spanbert_base`, `bert_base`, `spanbert_large`, or `bert_large`. I recommend `spanbert_large` for the best results (according to [the original repository](https://github.com/mandarjoshi90/coref)).
+
+Typically, pretrained models are larger than 1GB. Be prepared.
+
+
+## Usage
+
+Prepare input files with the following rules:
+
+- One document per one file.
+- One sentence per one line.
+
+
+### Basic usage
+
+```console
+foo@bar:~$ cat input.txt
+Mount Fuji is the highest mountain in Japan, standing 3,776.24 m (12,389.2 ft).
+It is the second-highest volcano located on an island in Asia (after Mount Kerinci on the island of Sumatra), and seventh-highest peak of an island on Earth.
+Mount Fuji is an active stratovolcano that last erupted from 1707 to 1708.
+
+foo@bar:~$ spanbertcoref -m spanbert_large input.txt
+```
+
+The output is in a JSONL format. Each line represents the result of coreference resolution for each input document.
+
+```json
+{"input_filename": "input.txt", "clusters": {"0": [[[0, 0], [0, 9], "Mount Fuji"], [[1, 0], [1, 1], "It"], [[2, 0], [2, 9], "Mount Fuji"]]}, "annotated_text": ["<ent_0>Mount Fuji</ent_0> is the highest mountain in Japan, standing 3,776.24 m (12,389.2 ft).", "<ent_0>It</ent_0> is the second-highest volcano located on an island in Asia (after Mount Kerinci on the island of Sumatra), and seventh-highest peak of an island on Earth.", "<ent_0>Mount Fuji</ent_0> is an active stratovolcano that last erupted from 1707 to 1708."]}
+```
+
+- `input_filename`: The filename of the input document.
+- `clusters`: Clusters of mentions coreferring the same entity. This is a dict, where the key is a cluster name and its corresponding value is a cluster of mentions. The cluster is a list of mentions. Each mention is represented by (i) a start offset, (ii) an end offset, and a surface form. The offset consists of a sentence number and character index (both zero-based) in the original input document. For example, `[[1, 0], [1, 1], "It"]` means *a span starting from 0-th character to 1-st character in the second sentence*.
+- `annotated_text`: An input text annotated with coreference relations in a SGML format.
+
+
+### Advanced usage
+
+#### Multiple inputs
+
+```console
+foo@bar:~$ spanbertcoref -m spanbert_large input1.txt input2.txt
+```
+
+#### Use a different model
+
+```console
+foo@bar:~$ spanbertcoref -m spanbert_base input1.txt input2.txt
+```
+
+#### Specify target genre
+
+WIP
+

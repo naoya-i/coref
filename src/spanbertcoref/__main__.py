@@ -21,7 +21,7 @@ def main():
         '-v', '--verbose', action="store_true",
         help="Debug mode.")
     parser.add_argument(
-        '-g', '--genre', default="nw",
+        '-g', '--genre', default="nw", choices="bc bn mz nw pt tc wb".split(),
         help="Genre of input document.")
     parser.add_argument(
         '-m', '--model', default="spanbert_base", choices="bert_base spanbert_base bert_large spanbert_large".split(),
