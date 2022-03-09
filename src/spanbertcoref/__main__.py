@@ -27,9 +27,6 @@ def main():
         '-m', '--model', default="spanbert_base", choices="bert_base spanbert_base bert_large spanbert_large".split(),
         help="Model type.")
     parser.add_argument(
-        '-o', '--output',
-        help="Output path.")
-    parser.add_argument(
         'inputs', nargs="+",
         help="Input document(s).")
 
@@ -46,35 +43,30 @@ def main():
     with tf.Session() as session:
         model.restore(session)
 
-        with maybe_file_handle(args.output) as output_file:
-            for example_num, input_filename in enumerate(tqdm(args.inputs)):
-                with open(input_filename) as fp:
-                    lines = fp.read().split("\n")
-                    example = parse_text(args, config, model.tokenizer, lines)
-                
-                tensorized_example = model.tensorize_example(example, is_training=False)
-                feed_dict = {i:t for i,t in zip(model.input_tensors, tensorized_example)}
+        for example_num, input_filename in enumerate(tqdm(args.inputs)):
+            with open(input_filename) as fp:
+                lines = fp.read().split("\n")
+                example = parse_text(args, config, model.tokenizer, lines)
+            
+            tensorized_example = model.tensorize_example(example, is_training=False)
+            feed_dict = {i:t for i,t in zip(model.input_tensors, tensorized_example)}
 
-                _, _, _, top_span_starts, top_span_ends, top_antecedents, top_antecedent_scores = session.run(model.predictions, feed_dict=feed_dict)
+            _, _, _, top_span_starts, top_span_ends, top_antecedents, top_antecedent_scores = session.run(model.predictions, feed_dict=feed_dict)
 
-                predicted_antecedents = model.get_predicted_antecedents(top_antecedents, top_antecedent_scores)
-                example["predicted_clusters"], _ = model.get_predicted_clusters(top_span_starts, top_span_ends, predicted_antecedents)
-                example["top_spans"] = list(zip((int(i) for i in top_span_starts), (int(i) for i in top_span_ends)))
-                example['head_scores'] = []
+            predicted_antecedents = model.get_predicted_antecedents(top_antecedents, top_antecedent_scores)
+            example["predicted_clusters"], _ = model.get_predicted_clusters(top_span_starts, top_span_ends, predicted_antecedents)
+            example["top_spans"] = list(zip((int(i) for i in top_span_starts), (int(i) for i in top_span_ends)))
+            example['head_scores'] = []
 
-                clusters = get_clusters(lines, example)
+            clusters = get_clusters(lines, example)
 
-                out = {
-                    "input_filename": input_filename,
-                    "clusters": clusters,
-                    "annotated_text": markup(lines, clusters),
-                }
+            out = {
+                "input_filename": input_filename,
+                "clusters": clusters,
+                "annotated_text": markup(lines, clusters),
+            }
 
-                print(json.dumps(out), file=output_file)
-
-
-def maybe_file_handle(f):
-    return open(f) if f is not None else sys.stdout
+            print(json.dumps(out))
 
 
 def parse_text(args, config, tokenizer, lines):
