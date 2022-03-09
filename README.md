@@ -65,7 +65,7 @@ The output is in a JSONL format. Each line represents the result of coreference 
 ```
 
 - `input_filename`: The filename of the input document.
-- `clusters`: Clusters of mentions coreferring the same entity. This is a dict, where the key is a cluster name and its corresponding value is a cluster of mentions. The cluster is a list of mentions. Each mention is represented by (i) a start offset, (ii) an end offset, and a surface form. The offset consists of a sentence number and character index (both zero-based) in the original input document. For example, `[[1, 0], [1, 1], "It"]` means *a span starting from 0-th character to 1-st character in the second sentence*.
+- `clusters`: Clusters of mentions coreferring the same entity. This is a dict, where the key is a cluster name and its corresponding value is a cluster of mentions. The cluster is a list of mentions. Each mention is represented by (i) a start offset, (ii) an end offset, and (iii) a surface form. The offset consists of a sentence number and character index (both zero-based) in the original input document. For example, `[[1, 0], [1, 1], "It"]` means *a span starting from 0-th character to 1-st character in the second sentence*.
 - `annotated_text`: An input text annotated with coreference relations in a SGML format.
 
 
@@ -80,10 +80,12 @@ foo@bar:~$ spanbertcoref -m spanbert_large input1.txt input2.txt
 #### Use a different model
 
 ```console
-foo@bar:~$ spanbertcoref -m spanbert_base input1.txt input2.txt
+foo@bar:~$ spanbertcoref -m spanbert_base input.txt
 ```
 
-#### Specify target genre
+#### Specify genre of text for more accurate results
 
-WIP
+```console
+foo@bar:~$ spanbertcoref -m spanbert_large -g wb input.txt
+```
 
