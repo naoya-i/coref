@@ -41,7 +41,6 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S')
 
     config = util.initialize_from_env(args.model)
-    tok = get_tokenizer(config, args.model)
     model = util.get_model(config)
 
     with tf.Session() as session:
@@ -51,7 +50,7 @@ def main():
             for example_num, input_filename in enumerate(tqdm(args.inputs)):
                 with open(input_filename) as fp:
                     lines = fp.read().split("\n")
-                    example = parse_text(args, config, tok, lines)
+                    example = parse_text(args, config, model.tokenizer, lines)
                 
                 tensorized_example = model.tensorize_example(example, is_training=False)
                 feed_dict = {i:t for i,t in zip(model.input_tensors, tensorized_example)}
@@ -76,10 +75,6 @@ def main():
 
 def maybe_file_handle(f):
     return open(f) if f is not None else sys.stdout
-
-
-def get_tokenizer(config, model_name):
-    return tokenization.FullTokenizer(vocab_file=os.path.join(config["model_root"], model_name, "vocab.txt"), do_lower_case=False)
 
 
 def parse_text(args, config, tokenizer, lines):
