@@ -5,7 +5,9 @@ Coreference resolution system powered by BERT/SpanBERT. This is a thin wrapper f
 
 ## Setup
 
-1. Make sure TensorFlow works
+TLDR: https://colab.research.google.com/drive/1pW6VKX92LYq9GxP7WwKzdlW-KGyrVmtI?usp=sharing
+
+### 1. Make sure TensorFlow works
 
 Please make sure that `tensorflow >= 1.14` or `tensorflow == 2.x` (preferably GPU version) works on your machine.
 If you manually install TensorFlow, we recommend creating a dedicated virtual environment and following https://www.tensorflow.org/install.
@@ -13,14 +15,14 @@ If you manually install TensorFlow, we recommend creating a dedicated virtual en
 See https://www.tensorflow.org/guide/gpu#setup for testing GPU support by TensorFlow.
 
 
-2. Install the software
+### 2. Install the software
 
 ```console
 foo@bar:~$ pip install git+https://github.com/naoya-i/spanbert-coref
 ```
 
 
-3. Run setup scripts
+### 3. Run setup scripts
 
 ```console
 foo@bar:~$ python -m spanbertcoref.configure
@@ -32,7 +34,7 @@ It compiles a TensorFlow kernel and copies a basic configuration file to your ho
 By default, it is `${HOME}/.spanbertcoref/model/`.
 
 
-4. Download pretrained models
+### 4. Download pretrained models
 
 ```console
 foo@bar:~$ python -m spanbertcoref.download spanbert_large
