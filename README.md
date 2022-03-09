@@ -8,7 +8,7 @@ Coreference resolution system powered by BERT/SpanBERT. This is a thin wrapper f
 1. Make sure TensorFlow works
 
 Please make sure that `tensorflow >= 1.14` or `tensorflow == 2.x` (preferably GPU version) works on your machine.
-If you manually install TensorFlow, we recommend creating a dedicated virtual environment and follow https://www.tensorflow.org/install.
+If you manually install TensorFlow, we recommend creating a dedicated virtual environment and following https://www.tensorflow.org/install.
 
 See https://www.tensorflow.org/guide/gpu#setup for testing GPU support by TensorFlow.
 
@@ -20,13 +20,13 @@ foo@bar:~$ pip install git+https://github.com/naoya-i/spanbert-coref
 ```
 
 
-3. Run setup
+3. Run setup scripts
 
 ```console
 foo@bar:~$ python -m spanbertcoref.configure
 ```
 
-It compiles a TensorFlow kernel and copy a basic configuration file to your home directory (`~/.spanbertcoref.conf`).
+It compiles a TensorFlow kernel and copies a basic configuration file to your home directory (`~/.spanbertcoref.conf`).
 
 (**Optional**) To specify where to download pretrained models, modify `model_root` in the conf file.
 By default, it is `${HOME}/.spanbertcoref/model/`.
@@ -89,7 +89,7 @@ Each line represents the result of coreference resolution for each input documen
 ```
 
 - `input_filename`: The filename of the input document.
-- `clusters`: Clusters of mentions coreferring the same entity. This is a dict, where the key is a cluster ID, and its corresponding value is the cluster of mentions. The cluster is a list of mentions. Each mention is represented by (i) a start offset, (ii) an end offset, and (iii) a surface form. The offset consists of a sentence number and character index (both zero-based) in the original input document. For example, `[[2, 29], [2, 31], "her"]` means *`her`, a span starting from 29-th character in the third sentence (`[2, 29]`) to 31-st character in the third sentence (`[2, 31]`)*.
+- `clusters`: Clusters of mentions coreferring the same entity. This is a dict, where the key is a cluster ID, and its corresponding value is the cluster of mentions. The cluster is a list of mentions. Each mention is represented by (i) a start offset, (ii) an end offset, and (iii) a surface form. The offset consists of a sentence number and character index (both zero-based) in the original input document. For example, `[[2, 29], [2, 31], "her"]` means *`her`, a span starting from the 29-th character in the third sentence (`[2, 29]`) to the 31-st character in the third sentence (`[2, 31]`)*.
 - `annotated_text`: An input text annotated with coreference relations in a SGML format. Each mention is wrapped by `<ent_i>...</ent_i>`, where `i` is a cluster ID.
 
 
@@ -129,3 +129,4 @@ The genre can be:
 - `wb` (Web Text).
 
 The default value is `nw`.
+See https://catalog.ldc.upenn.edu/docs/LDC2013T19/OntoNotes-Release-5.0.pdf for further details.
