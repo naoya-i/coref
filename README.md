@@ -5,7 +5,15 @@ Coreference resolution system powered by BERT/SpanBERT. This is a thin wrapper f
 
 ## Setup
 
-TLDR: https://colab.research.google.com/drive/1pW6VKX92LYq9GxP7WwKzdlW-KGyrVmtI?usp=sharing
+### TL;DR
+
+```console
+foo@bar:~$ pip install git+https://github.com/naoya-i/spanbert-coref
+foo@bar:~$ python -m spanbertcoref.configure
+foo@bar:~$ python -m spanbertcoref.download spanbert_large
+foo@bar:~$ spanbertcoref -m spanbert_large input.txt
+```
+
 
 ### 1. Make sure TensorFlow works
 
